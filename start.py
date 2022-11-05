@@ -8,6 +8,7 @@
 # todo: maybe not when there is simestamp < dell, but when new record is in json from binance
 # todo: może warto wyprzedzić i brać sygnał z godziny xx:xx:59 wg. ostatniego rekordu
 # todo: db timeout and connections close
+# todo: v0.02: handle error when account has not enought cash to do buy order
 
 # get libs
 import time
@@ -18,7 +19,7 @@ import pandas_ta as pta
 import uuid  # https://docs.python.org/3/library/uuid.html
 import json
 from binance.client import Client
-from binance import Client, ThreadedWebsocketManager, ThreadedDepthCacheManager  #(lib: python-binance)
+from binance import Client, ThreadedWebsocketManager, ThreadedDepthCacheManager  # (lib: python-binance)
 from binance.enums import *
 import os
 
@@ -31,7 +32,7 @@ worker_start_time = str(datetime.utcnow())
 signal_params = {}
 signal_expiration_timestamp = 0
 signal_list = []
-external_open_orders_list = [] # imported from stock exchange only for open orders
+external_open_orders_list = []  # imported from stock exchange only for open orders
 
 # create temporary directory for downloaded files
 def create_temp_dir(worklogs_dir_in):
@@ -45,7 +46,7 @@ def create_temp_dir(worklogs_dir_in):
 # worklogs
 def stock_play_worklog_to_json(wlog_string):
     # todo: create dir if not exist
-    with open(WORKLOGS_DIR + 'worklog_'+str(time.time())+'.json', 'w') as f:
+    with open(WORKLOGS_DIR + '//' + 'worklog_'+str(time.time())+'.json', 'w') as f:
         json.dump(wlog_string, f)
 
 
@@ -111,7 +112,7 @@ client = get_binance_client_connection()
 
 
 # main loop start
-iterator = 0.0 # main loop iterator
+iterator = 0.0  # main loop iterator
 signal_generation_status = False
 
 
@@ -170,7 +171,7 @@ if __name__ == "__main__":
             rsi_6 = pta.rsi(df['close'], length=6)
             df.append(rsi_6)
             # ROC
-            indicator_1_buy = pta.roc(df['close'], length=24)
+            indicator_1_buy = pta.roc(df['close'], length=24)  # todo: do smth. PTA and function write are not needed
             df.append(indicator_1_buy)
 
 
