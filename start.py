@@ -1,3 +1,4 @@
+# Version: 0.01
 # API doc: https://binance-docs.github.io/apidocs/spot/en/#change-log
 # todo: exceptions in while loop
 # todo: rollback when db error: https://github.com/mkleehammer/pyodbc/wiki/Cursor
