@@ -1,0 +1,19 @@
+{
+  "app_status": "on",
+  "signal_expiration_ticks": 3,
+
+  "symbol_base": "BTC",
+  "symbol_quote": "USDT",
+
+  "tick_interval": "1m",
+  "exchange": "kucoin",
+
+  "candle_limit": 500,
+  "log_level": "info",
+
+  "run_mode": "on_tick",
+  "run_interval_seconds": 10,
+
+  "retry_attempts": 3,
+  "retry_delay_seconds": 2
+}
