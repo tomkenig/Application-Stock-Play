@@ -10,8 +10,10 @@
 
     "tactic_description": "Sygnał LONG, gdy momentum jest skrajnie niskie (ROC100 <= -6) i RSI50 wskazuje wyprzedanie (RSI50 <= 30).",
 
-    "stake": 1,
+    "stake": 10,
     "tactic_side": "buy",
+
+    "entry_type": "limit",
 
     "indicator_1_name": "roc_100",
     "indicator_1_value": 10,
@@ -40,9 +42,7 @@
 
     "take_profit": 0.035,
     "stop_loss": -1,
-    "wait_periods": 2,
-
-    "entry_type": "market"
+    "wait_periods": 2
   },
 
   {
@@ -56,7 +56,9 @@
     "tactic_description": "Sygnał LONG, gdy krótkoterminowe momentum jest bardzo słabe (ROC20 <= -2) oraz RSI50 jest ekstremalnie niskie (RSI50 <= 15).",
 
     "stake": 10,
-    "game_type": "buy",
+    "tactic_side": "buy",
+
+    "entry_type": "limit",
 
     "indicator_1_name": "roc_20",
     "indicator_1_value": -2,
@@ -85,8 +87,6 @@
 
     "take_profit": 0.025,
     "stoploss": -1,
-    "wait_periods": 15,
-
-    "entry_type": "market"
+    "wait_periods": 15
   }
 ]

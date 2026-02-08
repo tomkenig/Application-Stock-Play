@@ -25,19 +25,18 @@ class OrderManager:
     # PUBLICZNE API
     # ============================================================
 
-    def create_order(self, side, order_type, amount, price=None, signal=None, expiration_time=None):
+    def create_order(self, side, symbol, order_type, amount, price=None, signal=None, expiration_time=None):
         """
         Główna funkcja do wystawiania orderów.
         Przyjmuje parametry i kieruje do odpowiedniej metody prywatnej.
         """
         if order_type == "market":
-            return self._create_market_order(side, amount, signal, expiration_time)
+            return self._create_market_order(side, symbol, amount, signal, expiration_time)
 
         if order_type == "limit":
-            return self._create_limit_order(side, amount, price, signal, expiration_time)
+            return self._create_limit_order(side, symbol, amount, price, signal, expiration_time)
 
         raise ValueError(f"Unknown order_type: {order_type}")
-
 
     def check_open_orders(self, current_timestamp):
         """
@@ -68,18 +67,24 @@ class OrderManager:
     # TWORZENIE ORDERÓW (PRYWATNE)
     # ============================================================
 
-    def _create_market_order(self, side, amount, signal, expiration_time):
+    def _create_market_order(self, side, symbol, amount, signal, expiration_time):
         """
-        Wystawia zlecenie MARKET.
+        Wystawia zlecenie MARKET przez ccxt.
         Zwraca OrderEvent.
         """
-        # tu będzie ccxt.create_order(...)
-        order_id = None  # placeholder
+        result = self.exchange.create_order(
+            symbol=symbol,
+            type="market",
+            side=side,
+            amount=amount
+        )
+        order_id = result["id"]
 
         event = OrderEvent(
             order_id=order_id,
             signal_id=signal,
             side=side,
+            symbol=symbol,
             order_type="market",
             price=None,
             amount=amount,
@@ -93,19 +98,25 @@ class OrderManager:
         self.active_orders.append(event)
         return event
 
-
-    def _create_limit_order(self, side, amount, price, signal, expiration_time):
+    def _create_limit_order(self, side, symbol, amount, price, signal, expiration_time):
         """
-        Wystawia zlecenie LIMIT.
+        Wystawia zlecenie LIMIT przez ccxt.
         Zwraca OrderEvent.
         """
-        # tu będzie ccxt.create_order(...)
-        order_id = None  # placeholder
+        result = self.exchange.create_order(
+            symbol=symbol,
+            type="limit",
+            side=side,
+            amount=amount,
+            price=price
+        )
+        order_id = result["id"]
 
         event = OrderEvent(
             order_id=order_id,
             signal_id=signal,
             side=side,
+            symbol=symbol,
             order_type="limit",
             price=price,
             amount=amount,
@@ -118,7 +129,6 @@ class OrderManager:
 
         self.active_orders.append(event)
         return event
-
 
     # ============================================================
     # OBSŁUGA STATUSÓW ORDERÓW
@@ -191,12 +201,12 @@ class OrderManager:
     # ============================================================
 
     def _cancel_remaining(self, order):
-        """
-        Anuluje pozostałą część BUY.
-        """
-        # ccxt.cancel_order(...)
-        pass
-
+        try:
+            self.exchange.cancel_order(order.order_id, order.symbol)
+            order.status = "canceled"
+        except Exception as e:
+            print(f"Error canceling order {order.order_id}: {e}")
+            order.status = "error"
 
     def _sell_remaining_market(self, order):
         """
@@ -228,12 +238,31 @@ class OrderManager:
 
     def _fetch_order_status(self, order):
         """
-        Pobiera status orderu z giełdy.
+        Pobiera status orderu z giełdy przez ccxt.
         Zwraca: (status, filled, remaining)
         """
-        # tu będzie ccxt.fetch_order(...)
-        return "open", 0, order.amount  # placeholder
+        try:
+            result = self.exchange.fetch_order(order.order_id, order.symbol)
 
+            filled = result.get("filled", 0)
+            remaining = result.get("remaining", order.amount)
+
+            # mapowanie statusów
+            ccxt_status = result.get("status", "open")
+            if filled > 0 and remaining > 0:
+                status = "partial"
+            elif ccxt_status == "closed":
+                status = "filled"
+            elif ccxt_status == "canceled":
+                status = "canceled"
+            else:
+                status = "open"
+
+            return status, filled, remaining
+
+        except Exception as e:
+            print(f"Error fetching order {order.order_id}: {e}")
+            return "error", order.filled, order.remaining
 
     def _calculate_tp_price(self, order):
         """

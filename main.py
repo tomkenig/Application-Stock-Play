@@ -3,6 +3,9 @@ import numpy as np
 import json
 import time
 import uuid
+import order_event
+
+
 
 from indicators_mod import (
     get_indicator_roc,
@@ -14,7 +17,7 @@ from symbol_resolver import resolve_symbol
 from trading_engine import TradingEngine
 from datetime import datetime, timezone
 from signal_generator import SignalEvent
-
+from order_manager import OrderManager
 
 # ============================
 # Load configs
@@ -149,6 +152,13 @@ if __name__ == "__main__":
     trading_engine.save_signals_to_json("signals.json")
 
     # ============================
+    # Order Manager
+    # ============================
+
+    # Tworzenie instancji OrderManager
+    order_manager = OrderManager(exchange_client)
+
+    # ============================
     # Main loop
     # ============================
     while True:
@@ -200,7 +210,10 @@ if __name__ == "__main__":
         print("Current price:", current_price)
 
         # ----------------------------
-        # Evaluate tactics (strategies)
+        # ENTRY SIGNAL HANDLER
+        # ----------------------------
+        # ----------------------------
+        # TACTICS CHECKER - Evaluate tactics (strategies)
         # ----------------------------
         for tactic in tactics:
             print("\n==============================")
@@ -209,12 +222,16 @@ if __name__ == "__main__":
             # Compute indicator values
             indicator_values = signal_generator.compute_indicators(close, tactic)
 
+            # ----------------------------
+            # IF signal = True (signal exists)
+            # ----------------------------
+
             # Check if tactic (strategy) conditions are met
             if signal_generator.check_tactic(indicator_values, tactic):
 
-                # ============================
+                # ----------------------------
                 # CREATE ENTRY_SIGNAL (SIGNAL EVENT)
-                # ============================
+                # ----------------------------
 
                 unique_id = str(generate_id())
 
@@ -233,10 +250,10 @@ if __name__ == "__main__":
                     tactic_group_name=tactic["tactic_group_name"],
                     tactic_name=tactic["tactic_name"],
                     tactic_id=tactic["tactic_id"],
-                    side=tactic.get("tactic_side", tactic.get("game_type", "buy")),  # buy / sell
+                    side=tactic["tactic_side"],  # buy / sell
+                    symbol=symbol,
                     entry_type=tactic["entry_type"],  # market / limit
                     price=current_price,
-
                     generation_timestamp=generation_timestamp,
                     tick_timestamp=tick_timestamp,
                     stake=tactic["stake"],            # amount in QUOTE
@@ -244,16 +261,53 @@ if __name__ == "__main__":
                     stop_loss=tactic.get("stop_loss", tactic.get("stoploss", -1)),
                     wait_periods=tactic["wait_periods"],
                     expiration_time=expiration_time,
-
                     internal_id=unique_id,
                     signal_id=f"ENTRY_SIGNAL_{unique_id}",
                     status="NEW",
                 )
 
-                print(f"[EVENT] {entry_signal_event.tactic_name} | {entry_signal_event.entry_type.upper()} @ {entry_signal_event.price}")
+                print(f"[ENTRY_SIGNAL_EVENT] {entry_signal_event.tactic_name} | {entry_signal_event.entry_type.upper()}"
+                      f" @ {entry_signal_event.price}, SIGNAL_ID: {entry_signal_event.signal_id}")
 
-                # Send event to trading engine
+                # ----------------------------
+                # ADD ENTRY_SIGNAL TO SIGNAL LIST (MEMORY) - Send event to trading engine
+                # ----------------------------
+
                 trading_engine.add_signal(entry_signal_event)
+
+                # ----------------------------
+                # CREATE ENTRY_ORDER (ORDER EVENT)
+                # ----------------------------
+
+                # LIMIT BUY
+                if entry_signal_event.status in ('NEW', 'CRASHED'):
+                    try:
+                        entry_order_event = order_manager.create_order(
+                            side=entry_signal_event.side,
+                            symbol=symbol,
+                            order_type=entry_signal_event.entry_type,
+                            amount=entry_signal_event.stake / current_price,
+                            price=current_price - 3000 ############################### -3k for tests only
+                            )
+                        print(
+                            f"[ENTRY_ORDER_EVENT] ORDER_ID: {entry_order_event.order_id}, "
+                            f"STATUS: {entry_order_event.status}")
+                        # SIGNAL: CHANGE SIGNAL STATUS TO ORDERED:
+                        entry_signal_event.status = "USED"
+                    except Exception as e:
+                        print(f"[WARN] Cannot create order from signal {entry_signal_event.signal_id}:", e)
+                        entry_signal_event.status = "CRASHED"
+                        time.sleep(5)
+                        continue
+
+                # ----------------------------
+                # ADD ENTRY_ORDER TO ORDER LIST (MEMORY) - Send event to trading engine
+                # ----------------------------
+
+                ###############trading_engine.add_signal(entry_signal_event)
+
+
+
 
         # Remove expired signals during runtime
         trading_engine.clear_expired_signals(server_ms)

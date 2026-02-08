@@ -8,3 +8,14 @@ game_conf.json
 worklogsworklog_1667585777.7607942.json
 testt.py
 credentials.json
+heartbeat.log
+signals.json
+__pycache__/indicators_mod.cpython-313.pyc
+__pycache__/indicators.cpython-313.pyc
+__pycache__/order_event.cpython-313.pyc
+__pycache__/order_manager.cpython-313.pyc
+__pycache__/signal_generator.cpython-313.pyc
+__pycache__/symbol_resolver.cpython-313.pyc
+__pycache__/trading_engine.cpython-313.pyc
+test.py
+signals_hist_2026-02-08.json

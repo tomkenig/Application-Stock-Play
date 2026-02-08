@@ -11,6 +11,7 @@ class OrderEvent:
         order_id,
         signal_id,
         side,               # "buy" / "sell"
+        symbol,
         order_type,         # "market" / "limit"
         price,
         amount,
@@ -31,6 +32,9 @@ class OrderEvent:
 
         # MARKET lub LIMIT
         self.order_type = order_type
+
+        # symbol
+        self.symbol = symbol
 
         # Cena (dla LIMIT), None dla MARKET
         self.price = price

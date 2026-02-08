@@ -32,6 +32,7 @@ class TradingEngine:
                 "tactic_name": s.tactic_name,
                 "tactic_id": s.tactic_id,
                 "side": s.side,
+                "symbol": s.symbol,
                 "entry_type": s.entry_type,
                 "price": s.price,
 
@@ -70,6 +71,7 @@ class TradingEngine:
                 tactic_name=item["tactic_name"],
                 tactic_id=item["tactic_id"],
                 side=item["side"],
+                symbol=item["symbol"],
                 entry_type=item["entry_type"],
                 price=item["price"],
                 generation_timestamp=item["generation_timestamp"],
@@ -118,8 +120,8 @@ class TradingEngine:
         if removed > 0:
             print(f"[ENGINE] Removed {removed} expired signals.")
             # Oznacz status w pamięci i zapisz wygasłe sygnały do pliku historii
-            for s in expired_signals:
-                s.status = "ARCHIVED"
+            # for s in expired_signals:
+            #     s.status = "ARCHIVED"
             self._save_expired_signals_to_history(expired_signals, current_timestamp)
 
     def _save_expired_signals_to_history(self, expired_signals, current_timestamp):
@@ -140,6 +142,7 @@ class TradingEngine:
                 "tactic_name": s.tactic_name,
                 "tactic_id": s.tactic_id,
                 "side": s.side,
+                "symbol": s.symbol,
                 "entry_type": s.entry_type,
                 "price": s.price,
                 "generation_timestamp": s.generation_timestamp,

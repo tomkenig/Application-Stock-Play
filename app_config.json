@@ -1,6 +1,6 @@
 {
   "app_status": "on",
-  "signal_expiration_ticks": 3,
+  "signal_expiration_ticks": 1,
 
   "symbol_base": "BTC",
   "symbol_quote": "USDT",

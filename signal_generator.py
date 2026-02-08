@@ -81,6 +81,7 @@ class SignalEvent:
         tactic_name,
         tactic_id,
         side,
+        symbol,
         entry_type,
         price,
         generation_timestamp,
@@ -98,6 +99,7 @@ class SignalEvent:
         self.tactic_name = tactic_name
         self.tactic_id = tactic_id
         self.side = side                        # buy / sell
+        self.symbol = symbol
         self.entry_type = entry_type            # market / limit
         self.price = price                      # current price
 
