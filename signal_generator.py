@@ -85,15 +85,22 @@ class SignalEvent:
         entry_type,
         price,
         generation_timestamp,
+        generation_timestamp_dt,
         tick_timestamp,
+        tick_timestamp_dt,
         stake,
         take_profit,
         stop_loss,
         wait_periods,
-        expiration_time,
+        expiration_timestamp,
+        expiration_timestamp_dt,
         internal_id,
         signal_id,
-        status
+        status,
+        entry_order,
+        close_order,
+        close_escape_order,
+        stage
     ):
         self.tactic_group_name = tactic_group_name
         self.tactic_name = tactic_name
@@ -105,9 +112,11 @@ class SignalEvent:
 
         # czas wygenerowania sygnału przez aplikację (ms, czas serwera giełdy)
         self.generation_timestamp = generation_timestamp
+        self.generation_timestamp_dt = generation_timestamp_dt
 
         # czas zamknięcia świecy giełdowej, na której powstał sygnał (ms)
         self.tick_timestamp = tick_timestamp
+        self.tick_timestamp_dt = tick_timestamp_dt
 
         self.stake = stake                      # amount in QUOTE currency
         self.take_profit = take_profit          # e.g. 0.025 = +2.5%
@@ -115,8 +124,15 @@ class SignalEvent:
         self.wait_periods = wait_periods        # number of candles to wait
 
         # docelowy timestamp wygaśnięcia sygnału (ms)
-        self.expiration_time = expiration_time
+        self.expiration_timestamp = expiration_timestamp
+        self.expiration_timestamp_dt = expiration_timestamp_dt
 
         self.internal_id = internal_id          # internal identifier
         self.signal_id = signal_id              # signal identifier
         self.status = status                    # signal status
+
+        self.entry_order = entry_order
+        self.close_order = close_order
+        self.close_escape_order = close_escape_order
+
+        self.stage = stage

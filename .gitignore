@@ -19,3 +19,7 @@ __pycache__/symbol_resolver.cpython-313.pyc
 __pycache__/trading_engine.cpython-313.pyc
 test.py
 signals_hist_2026-02-08.json
+TODO.py
+__pycache__/signal_engine.cpython-313.pyc
+.gitignore
+signals_hist_2026-02-16.json

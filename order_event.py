@@ -19,7 +19,8 @@ class OrderEvent:
         remaining,
         status,             # "new" / "open" / "partial" / "filled" / "canceled" / "error"
         creation_timestamp,
-        expiration_time
+        expiration_timestamp,
+        stage
     ):
         # ID nadawane przez giełdę (ccxt zwróci)
         self.order_id = order_id
@@ -55,8 +56,10 @@ class OrderEvent:
         self.creation_timestamp = creation_timestamp
 
         # Timestamp wygaśnięcia orderu (ms)
-        self.expiration_time = expiration_time
+        self.expiration_timestamp = expiration_timestamp
 
+        # stage - entry, close, close_escape
+        self.stage = stage
 
     def is_active(self):
         """

@@ -1,5 +1,6 @@
 # order_manager.py
-
+import json
+import os
 from datetime import datetime, timezone
 from order_event import OrderEvent
 
@@ -10,7 +11,7 @@ class OrderManager:
     - wystawianie BUY/SELL (market/limit)
     - monitorowanie statusów
     - obsługa partial fill
-    - anulowanie po expiration_time
+    - anulowanie po expiration_timestamp
     - wystawianie SELL LIMIT po BUY
     - wystawianie SELL MARKET po częściowym TP
     """
@@ -20,21 +21,56 @@ class OrderManager:
         self.active_orders = []      # lista OrderEvent
         self.completed_orders = []   # historia (opcjonalnie)
 
+    # ============================================================
+    # ZAPIS / ODCZYT ORDERÓW DO JSON
+    # ============================================================
+
+    def save_orders_to_json(self, filepath="orders.json"):
+        data = []
+        for o in self.active_orders + self.completed_orders:
+            data.append(o.__dict__)
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+
+    def load_orders_from_json(self, filepath="orders.json"):
+        if not os.path.exists(filepath):
+            print("[ORDER_MANAGER] No saved orders found.")
+            return
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except json.JSONDecodeError as e:
+            print(f"[ORDER_MANAGER] Corrupted {filepath} ({e}), resetting file.")
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump([], f)
+            return
+
+        self.active_orders = []
+        self.completed_orders = []
+        for item in data:
+            try:
+                order = OrderEvent(**item)
+                if order.status in ("open", "partial"):
+                    self.active_orders.append(order)
+                else:
+                    self.completed_orders.append(order)
+            except Exception as e:
+                print(f"[ORDER_MANAGER] Error rebuilding order: {e}")
 
     # ============================================================
     # PUBLICZNE API
     # ============================================================
 
-    def create_order(self, side, symbol, order_type, amount, price=None, signal=None, expiration_time=None):
+    def create_order(self, side, symbol, order_type, amount, price=None, signal_id=None, expiration_timestamp=None, stage=None):
         """
         Główna funkcja do wystawiania orderów.
         Przyjmuje parametry i kieruje do odpowiedniej metody prywatnej.
         """
         if order_type == "market":
-            return self._create_market_order(side, symbol, amount, signal, expiration_time)
+            return self._create_market_order(side, symbol, amount, signal_id, expiration_timestamp, stage)
 
         if order_type == "limit":
-            return self._create_limit_order(side, symbol, amount, price, signal, expiration_time)
+            return self._create_limit_order(side, symbol, amount, price, signal_id, expiration_timestamp, stage)
 
         raise ValueError(f"Unknown order_type: {order_type}")
 
@@ -59,7 +95,7 @@ class OrderManager:
             elif status == "partial":
                 self._handle_partial(order, current_timestamp)
 
-            elif current_timestamp >= order.expiration_time:
+            elif current_timestamp >= order.expiration_timestamp:
                 self._handle_expired(order)
 
 
@@ -67,7 +103,7 @@ class OrderManager:
     # TWORZENIE ORDERÓW (PRYWATNE)
     # ============================================================
 
-    def _create_market_order(self, side, symbol, amount, signal, expiration_time):
+    def _create_market_order(self, side, symbol, amount, signal_id, expiration_timestamp, stage):
         """
         Wystawia zlecenie MARKET przez ccxt.
         Zwraca OrderEvent.
@@ -82,7 +118,7 @@ class OrderManager:
 
         event = OrderEvent(
             order_id=order_id,
-            signal_id=signal,
+            signal_id=signal_id,
             side=side,
             symbol=symbol,
             order_type="market",
@@ -92,13 +128,14 @@ class OrderManager:
             remaining=amount,
             status="open",
             creation_timestamp=self._now_ms(),
-            expiration_time=expiration_time
+            expiration_timestamp=expiration_timestamp,
+            stage=stage
         )
 
         self.active_orders.append(event)
         return event
 
-    def _create_limit_order(self, side, symbol, amount, price, signal, expiration_time):
+    def _create_limit_order(self, side, symbol, amount, price, signal_id, expiration_timestamp, stage):
         """
         Wystawia zlecenie LIMIT przez ccxt.
         Zwraca OrderEvent.
@@ -114,7 +151,7 @@ class OrderManager:
 
         event = OrderEvent(
             order_id=order_id,
-            signal_id=signal,
+            signal_id=signal_id,
             side=side,
             symbol=symbol,
             order_type="limit",
@@ -124,7 +161,8 @@ class OrderManager:
             remaining=amount,
             status="open",
             creation_timestamp=self._now_ms(),
-            expiration_time=expiration_time
+            expiration_timestamp=expiration_timestamp,
+            stage=stage
         )
 
         self.active_orders.append(event)
@@ -144,11 +182,12 @@ class OrderManager:
             tp_price = self._calculate_tp_price(order)
             self.create_order(
                 side="sell",
+                symbol=order.symbol,
                 order_type="limit",
                 amount=order.amount,
                 price=tp_price,
-                signal=order.signal_id,
-                expiration_time=order.expiration_time
+                signal_id=order.signal_id,
+                expiration_timestamp=order.expiration_timestamp
             )
 
         self._finalize_order(order)
@@ -169,11 +208,12 @@ class OrderManager:
             tp_price = self._calculate_tp_price(order)
             self.create_order(
                 side="sell",
+                symbol=order.symbol,
                 order_type="limit",
                 amount=order.filled,
                 price=tp_price,
-                signal=order.signal_id,
-                expiration_time=order.expiration_time
+                signal_id=order.signal_id,
+                expiration_timestamp=order.expiration_timestamp
             )
 
         elif order.side == "sell":
@@ -216,10 +256,11 @@ class OrderManager:
         if remaining > 0:
             self.create_order(
                 side="sell",
+                symbol=order.symbol,
                 order_type="market",
                 amount=remaining,
-                signal=order.signal_id,
-                expiration_time=order.expiration_time
+                signal_id=order.signal_id,
+                expiration_timestamp=order.expiration_timestamp
             )
 
 
