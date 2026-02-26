@@ -306,9 +306,11 @@ if __name__ == "__main__":
                     stake=tactic["stake"],            # amount in QUOTE
                     take_profit=tactic["take_profit"],
                     stop_loss=tactic.get("stop_loss", tactic.get("stoploss", -1)),
-                    wait_periods=tactic["wait_periods"],
                     expiration_timestamp=expiration_timestamp,
                     expiration_timestamp_dt=datetime.fromtimestamp(expiration_timestamp / 1000).strftime('%Y-%m-%d %H:%M:%S.%f'),
+                    close_order_expiration_ticks=tactic["close_order_expiration_ticks"],
+                    close_order_expiration_timestamp=tick_timestamp + ((tactic["close_order_expiration_ticks"] + 1) * tick_seconds * 1000),
+                    close_order_expiration_timestamp_dt=datetime.fromtimestamp((tick_timestamp + ((tactic["close_order_expiration_ticks"] + 1) * tick_seconds * 1000)) / 1000).strftime('%Y-%m-%d %H:%M:%S.%f'),
                     internal_id=unique_id,
                     signal_id=f"ENTRY_SIGNAL_{unique_id}",
                     status="new",
@@ -320,7 +322,11 @@ if __name__ == "__main__":
 
                 print(f"[ENTRY_SIGNAL_EVENT] {entry_signal_event.tactic_name} | {entry_signal_event.entry_type.upper()}"
                       f" @ {entry_signal_event.price}, SIGNAL_ID: {entry_signal_event.signal_id} "
-                      f" tick_timestamp_dt:  {entry_signal_event.tick_timestamp_dt} ")
+                      f" \ngeneration_timestamp_dt:  {entry_signal_event.generation_timestamp_dt} "
+                      f" \ntick_timestamp_dt (open):  {entry_signal_event.tick_timestamp_dt} "
+                      f" \nexpiration_timestamp_dt:  {entry_signal_event.expiration_timestamp_dt} "
+                      f" \nclose_order_expiration_timestamp_dt:  {entry_signal_event.close_order_expiration_timestamp_dt} ")
+
 
                 # ----------------------------
                 # ADD ENTRY_SIGNAL TO SIGNAL LIST (MEMORY) - Send event to signal engine
@@ -374,12 +380,6 @@ if __name__ == "__main__":
             # ----------------------------
             # CREATE REVERSE ORDER (ORDER EVENT)
             # ----------------------------
-            ### check reverse expiy tmstmp
-            # print('reverse')
-            # reverse_order_expiration_timestamp = tick_timestamp + ((tactic["wait_periods"] + 1) * tick_seconds * 1000)
-            # reverse_order_expiration_timestamp_dt = datetime.fromtimestamp(reverse_order_expiration_timestamp / 1000).strftime('%Y-%m-%d %H:%M:%S.%f')
-            # print(reverse_order_expiration_timestamp)
-            # print(reverse_order_expiration_timestamp_dt)
 
             # po order_manager.check_open_orders(now_ms)
             signal_engine.sync_orders(order_manager)
@@ -391,7 +391,7 @@ if __name__ == "__main__":
                     continue
 
                  # ile tickow order ma przezyc?
-                reverse_order_expiration_timestamp = signal.tick_timestamp + ((tactic["wait_periods"] + 1) * tick_seconds * 1000)
+                reverse_order_expiration_timestamp = signal.tick_timestamp + ((tactic["close_order_expiration_ticks"] + 1) * tick_seconds * 1000)
                 # CASE 1: filled → wystaw reverse order
                 if order.status == "filled" and signal.stage == "entry_order":
                     close_order = order_manager.create_order(
@@ -401,7 +401,7 @@ if __name__ == "__main__":
                         amount=order.amount,
                         price=order.price * (1 + signal.take_profit),  # cena wyższa o TP
                         signal_id=signal.signal_id,
-                        expiration_timestamp=reverse_order_expiration_timestamp,  # tu nie ma znaczenia todo: zmienić , bo ma , to wait_periods
+                        expiration_timestamp=signal.close_order_expiration_timestamp,
                         stage="close_order"
                     )
                     signal.close_order = close_order
@@ -417,7 +417,7 @@ if __name__ == "__main__":
                         amount=order.filled,  # tylko kupiona część
                         price=order.price * (1 + signal.take_profit),
                         signal_id=signal.signal_id,
-                        expiration_timestamp=reverse_order_expiration_timestamp, # todo: zmienić , bo ma , to wait_periods
+                        expiration_timestamp=signal.close_order_expiration_timestamp,
                         stage="close_order"
                     )
                     signal.close_order = close_order
@@ -440,9 +440,9 @@ if __name__ == "__main__":
                         symbol=signal.symbol,
                         order_type="market",
                         amount=order.amount,
-                        price=None,  # market order has no price price=order.price * (1 + signal.take_profit),
+                        price=None,  # market order has no price. price=order.price * (1 + signal.take_profit),
                         signal_id=signal.signal_id,
-                        expiration_timestamp=None,  # tu nie ma znaczenia
+                        expiration_timestamp=signal.close_order_expiration_timestamp + 63_072_000, # plus 2 lata None
                         stage="close_escape_order"
                     )
                     signal.close_order = close_order

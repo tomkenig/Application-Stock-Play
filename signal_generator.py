@@ -91,9 +91,11 @@ class SignalEvent:
         stake,
         take_profit,
         stop_loss,
-        wait_periods,
         expiration_timestamp,
         expiration_timestamp_dt,
+        close_order_expiration_ticks,
+        close_order_expiration_timestamp,
+        close_order_expiration_timestamp_dt,
         internal_id,
         signal_id,
         status,
@@ -121,11 +123,14 @@ class SignalEvent:
         self.stake = stake                      # amount in QUOTE currency
         self.take_profit = take_profit          # e.g. 0.025 = +2.5%
         self.stop_loss = stop_loss              # not used yet
-        self.wait_periods = wait_periods        # number of candles to wait
 
-        # docelowy timestamp wygaśnięcia sygnału (ms)
+        # docelowy timestamp wygaśnięcia sygnału (ms) / orderu wejscia
         self.expiration_timestamp = expiration_timestamp
         self.expiration_timestamp_dt = expiration_timestamp_dt
+        # docelowy timestamp wygaśnięcia close order (ms) /
+        self.close_order_expiration_ticks = close_order_expiration_ticks        # number of candles to wait
+        self.close_order_expiration_timestamp = close_order_expiration_timestamp
+        self.close_order_expiration_timestamp_dt = close_order_expiration_timestamp_dt
 
         self.internal_id = internal_id          # internal identifier
         self.signal_id = signal_id              # signal identifier

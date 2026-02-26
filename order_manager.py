@@ -89,13 +89,13 @@ class OrderManager:
             order.remaining = remaining
             order.status = status
 
-            if status == "filled":
-                self._handle_filled(order)
+            # if status == "filled":
+            #     self._handle_filled(order)
 
-            elif status == "partial":
-                self._handle_partial(order, current_timestamp)
+            # elif status == "partial":
+            #     self._handle_partial(order, current_timestamp)
 
-            elif current_timestamp >= order.expiration_timestamp:
+            if current_timestamp >= order.expiration_timestamp:
                 self._handle_expired(order)
 
 
@@ -172,54 +172,55 @@ class OrderManager:
     # OBSŁUGA STATUSÓW ORDERÓW
     # ============================================================
 
-    def _handle_filled(self, order):
-        """
-        Order w pełni zrealizowany.
-        BUY → wystaw SELL LIMIT (TP)
-        SELL → koniec cyklu
-        """
-        if order.side == "buy":
-            tp_price = self._calculate_tp_price(order)
-            self.create_order(
-                side="sell",
-                symbol=order.symbol,
-                order_type="limit",
-                amount=order.amount,
-                price=tp_price,
-                signal_id=order.signal_id,
-                expiration_timestamp=order.expiration_timestamp
-            )
+    # token: now in main.py
+    # def _handle_filled(self, order):
+    #     """
+    #     Order w pełni zrealizowany.
+    #     BUY → wystaw SELL LIMIT (TP)
+    #     SELL → koniec cyklu
+    #     """
+    #     if order.side == "buy":
+    #         tp_price = self._calculate_tp_price(order)
+    #         self.create_order(
+    #             side="sell",
+    #             symbol=order.symbol,
+    #             order_type="limit",
+    #             amount=order.amount,
+    #             price=tp_price,
+    #             signal_id=order.signal_id,
+    #             expiration_timestamp=order.expiration_timestamp
+    #         )
+    #
+    #     self._finalize_order(order)
 
-        self._finalize_order(order)
-
-
-    def _handle_partial(self, order, current_timestamp):
-        """
-        BUY partial:
-            - anuluj pozostałą część
-            - wystaw SELL LIMIT na część kupioną
-
-        SELL partial:
-            - resztę sprzedaj MARKET
-        """
-        if order.side == "buy":
-            self._cancel_remaining(order)
-
-            tp_price = self._calculate_tp_price(order)
-            self.create_order(
-                side="sell",
-                symbol=order.symbol,
-                order_type="limit",
-                amount=order.filled,
-                price=tp_price,
-                signal_id=order.signal_id,
-                expiration_timestamp=order.expiration_timestamp
-            )
-
-        elif order.side == "sell":
-            self._sell_remaining_market(order)
-
-        self._finalize_order(order)
+    # token: now in main.py
+    # def _handle_partial(self, order, current_timestamp):
+    #     """
+    #     BUY partial:
+    #         - anuluj pozostałą część
+    #         - wystaw SELL LIMIT na część kupioną
+    #
+    #     SELL partial:
+    #         - resztę sprzedaj MARKET
+    #     """
+    #     if order.side == "buy":
+    #         self._cancel_remaining(order)
+    #
+    #         tp_price = self._calculate_tp_price(order)
+    #         self.create_order(
+    #             side="sell",
+    #             symbol=order.symbol,
+    #             order_type="limit",
+    #             amount=order.filled,
+    #             price=tp_price,
+    #             signal_id=order.signal_id,
+    #             expiration_timestamp=order.expiration_timestamp
+    #         )
+    #
+    #     elif order.side == "sell":
+    #         self._sell_remaining_market(order)
+    #
+    #     self._finalize_order(order)
 
 
     def _handle_expired(self, order):
@@ -231,7 +232,7 @@ class OrderManager:
             self._cancel_remaining(order)
 
         elif order.side == "sell":
-            self._sell_remaining_market(order)
+            self._cancel_remaining(order)
 
         self._finalize_order(order)
 
@@ -248,20 +249,21 @@ class OrderManager:
             print(f"Error canceling order {order.order_id}: {e}")
             order.status = "error"
 
-    def _sell_remaining_market(self, order):
-        """
-        Sprzedaje pozostałą część SELL MARKET.
-        """
-        remaining = order.remaining
-        if remaining > 0:
-            self.create_order(
-                side="sell",
-                symbol=order.symbol,
-                order_type="market",
-                amount=remaining,
-                signal_id=order.signal_id,
-                expiration_timestamp=order.expiration_timestamp
-            )
+    # token: now in main.py
+    # def _sell_remaining_market(self, order):
+    #     """
+    #     Sprzedaje pozostałą część SELL MARKET.
+    #     """
+    #     remaining = order.remaining
+    #     if remaining > 0:
+    #         self.create_order(
+    #             side="sell",
+    #             symbol=order.symbol,
+    #             order_type="market",
+    #             amount=remaining,
+    #             signal_id=order.signal_id,
+    #             expiration_timestamp=order.expiration_timestamp
+    #         )
 
 
     def _finalize_order(self, order):
@@ -305,12 +307,13 @@ class OrderManager:
             print(f"Error fetching order {order.order_id}: {e}")
             return "error", order.filled, order.remaining
 
-    def _calculate_tp_price(self, order):
-        """
-        Oblicza cenę take-profit na podstawie sygnału.
-        """
-        # placeholder
-        return order.price * 1.02
+    # token: now in main.py
+    # def _calculate_tp_price(self, order):
+    #     """
+    #     Oblicza cenę take-profit na podstawie sygnału.
+    #     """
+    #     # placeholder
+    #     return order.price * 1.02
 
 
     def _now_ms(self):
